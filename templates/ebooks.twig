@@ -1,0 +1,27 @@
+{% extends "layout.twig" %}
+
+{% block title %}
+  Ebooks
+{% endblock %}
+
+{% block body %}
+  <h1>Ebooks</h1>
+  <button id="ebook1">Click to download ebook 1</button>
+  <button id="ebook2">Click to download ebook 2</button>
+  <button id="ebook3">Click to download ebook 3</button>
+{% endblock %}
+
+{% block js %}
+  <script>
+   document.addEventListener("DOMContentLoaded", () => {
+    ["ebook1", "ebook2", "ebook3"].forEach(id => {
+      const button = document.getElementById(id);
+      if (button) {
+        button.addEventListener("click", () => {
+         journy("event", { tag: id });
+        });
+      }
+    })
+   });
+  </script>
+{% endblock %}

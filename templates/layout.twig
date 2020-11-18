@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+  <body>
+    {{ include("header.twig") }}
+    {% block body %}{% endblock %}
+    {{ include("snippet.twig") }}
+    {% block js %}{% endblock %}
+  </body>
+</html>
