@@ -7,6 +7,7 @@ use Money\Money;
 
 final class Product
 {
+    private bool $deleted = false;
     private string $id;
     private string $shopId;
     private string $name;
@@ -50,5 +51,15 @@ final class Product
     public function getPrice(): Money
     {
         return $this->price;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deleted;
+    }
+
+    public function delete(): void
+    {
+        $this->deleted = true;
     }
 }

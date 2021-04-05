@@ -49,6 +49,9 @@
                                     </div>
                                 </div>
                             </div>
+                            <form class="card-footer" action="/shops/{{ shopId }}/products/{{ product.id|url_encode }}/delete" method="POST">
+                                <button type="submit" class="card-footer-item button is-link is-inverted">Delete</button>
+                            </form>
                         </div>
                     {% endfor %}
                 {% endif %}

@@ -84,7 +84,9 @@ final class ProductsJSONFile implements Products
     {
         $products = $this->load($product->getShopId());
         $products = array_filter($products, fn ($existing) => $existing->getId() !== $product->getId());
-        $products[] = $product;
+        if ($product->isDeleted() === false) {
+            $products[] = $product;
+        }
         $this->write($products, $product->getShopId());
     }
 }

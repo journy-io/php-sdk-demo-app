@@ -2,7 +2,8 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\{ShopAdmin,
+use App\{Products,
+    ShopAdmin,
     ShopAdmins,
     ShopAdminsInMemory,
     Product,
@@ -78,6 +79,7 @@ $shops->persist($electronics);
 $admins = new ShopAdminsInMemory();
 $admins->persist(new ShopAdmin($hans->getId(), $clothing->getId()));
 $admins->persist(new ShopAdmin($hans->getId(), $electronics->getId()));
+/** @var Products $products */
 $products = new ProductsJSONFile(__DIR__ . '/../data');
 $http = new Curl($factory, ["timeout" => 5]);
 $client = new Client($http, $factory, $factory, ["apiKey" => $_ENV["API_KEY"], "rootUrl" => $_ENV["API_URL"]]);
@@ -291,7 +293,7 @@ $router->post('/shops/{shopId}/products/add', function (ServerRequestInterface $
 
     $products->persist(
         new Product(
-            uniqid("product_", true),
+            uniqid("product_", false),
             $shopId,
             $body["name"],
             Money::EUR($body["price"] * 100)
@@ -312,9 +314,67 @@ $router->post('/shops/{shopId}/products/add', function (ServerRequestInterface $
     ;
 });
 
-$router->post("/logout", function (ServerRequestInterface $request) {
+$router->post('/shops/{shopId}/products/{productId}/delete', function (ServerRequestInterface $request, array $args) use (
+    $users,
+    $products,
+    $client
+): ResponseInterface {
     /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
     $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
+    $userId = $session->get("userId");
+    $user = $users->getById($userId);
+
+    if (!$user) {
+        return (new Response())
+            ->withStatus(302)
+            ->withAddedHeader("Location", "/login")
+        ;
+    }
+
+    $shopId = $args["shopId"];
+    $productId = $args["productId"];
+    $shopProducts = $products->getByShopId($shopId);
+    foreach ($shopProducts as $product) {
+        if ($product->getId() === $productId) {
+            $product->delete();
+            $products->persist($product);
+
+            $client->addEvent(
+                Event::forUserInAccount(
+                    "removed_product",
+                    UserIdentified::byUserId($user->getId()),
+                    AccountIdentified::byAccountId($shopId)
+                )
+            );
+        }
+    }
+
+    return (new Response())
+        ->withStatus(302)
+        ->withAddedHeader("Location", "/shops/{$shopId}/products")
+    ;
+});
+
+$router->post("/logout", function (ServerRequestInterface $request) use ($users, $client) {
+    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
+    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
+    $userId = $session->get("userId");
+    $user = $users->getById($userId);
+
+    if (!$user) {
+        return (new Response())
+            ->withStatus(302)
+            ->withAddedHeader("Location", "/login")
+        ;
+    }
+
+    $client->addEvent(
+        Event::forUser(
+            "logged_out",
+            UserIdentified::byUserId($user->getId())
+        )
+    );
+
     $session->clear();
 
     return (new Response())
