@@ -10,8 +10,14 @@ This demo application shows you how you can use our [PHP SDK](https://github.com
 $ composer install
 ```
 
-### Copy the `.env-example` file and paste your API key generated via [app.journy.io](https://app.journy.io/?utm_source=github&utm_content=readme-php-demo-app)
+### Copy the `.env-example` file and paste your API key generated via [system.journy.io](https://system.journy.io/?utm_source=github&utm_content=readme-php-demo-app)
 
 ```sh
 $ cp .env-example .env
+```
+
+### Start application
+
+```sh
+$ php -S localhost:3000 -t public
 ```

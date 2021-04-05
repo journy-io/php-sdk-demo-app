@@ -1,0 +1,58 @@
+{% extends "layout.twig" %}
+
+{% block title %}
+    Products
+{% endblock %}
+
+{% block body %}
+    <section class="hero is-small is-link mb-4">
+        <div class="hero-body">
+            <div class="container">
+                <p class="title">
+                    Products
+                </p>
+            </div>
+        </div>
+    </section>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-one-quarter">
+                <aside class="menu">
+                    <p class="menu-label">
+                        Your Shops
+                    </p>
+                    {% if shops %}
+                        <ul class="menu-list">
+                            {% for shop in shops %}
+                                <li>
+                                    {% if shop.id == shopId %}
+                                        <a class="is-active">{{ shop.name|e }}</a>
+                                    {% else %}
+                                        <a href="/shops/{{ shop.id }}/products">{{ shop.name|e }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </aside>
+            </div>
+            <div class="column">
+                <a class="button is-link mb-4" href="/shops/{{ shopId }}/products/add">Add product</a>
+                {% if products %}
+                    {% for product in products %}
+                        <div class="card mb-4">
+                            <div class="card-content">
+                                <div class="media">
+                                    <div class="media-content">
+                                        <p class="title is-4">{{ product.name|e }}</p>
+                                        <p class="subtitle is-6">€ {{ product.price }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

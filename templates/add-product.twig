@@ -1,0 +1,39 @@
+{% extends "layout.twig" %}
+
+{% block title %}
+Products
+{% endblock %}
+
+{% block body %}
+    <section class="hero is-small is-link mb-4">
+        <div class="hero-body">
+            <div class="container">
+                <p class="title">
+                    Products
+                </p>
+            </div>
+        </div>
+    </section>
+    <div class="container">
+        <a class="button is-link mb-4" href="/shops/{{ shopId }}/products">Back to products</a>
+        <form action="/shops/{{ shopId }}/products/add" method="POST">
+            <div class="field">
+                <label for="name">Name</label>
+                <div class="control">
+                    <input class="input" type="text" id="name" name="name" required="required">
+                </div>
+            </div>
+            <div class="field">
+                <label for="price">Price in EUR</label>
+                <div class="control">
+                    <input class="input" type="number" id="price" name="price" required="required">
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button class="button is-link">Add product</button>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
