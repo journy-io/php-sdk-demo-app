@@ -58,6 +58,13 @@ final class HandlerProductsAdd implements Handler
                 ])
         );
 
+        $this->client->upsertAccount([
+            "accountId" => (string) $shopId,
+            "properties" => [
+                "products" => count($this->products->getByShopId($shopId)),
+            ],
+        ]);
+
         return $this->factory->createResponse()
             ->withStatus(302)
             ->withAddedHeader("Location", "/shops/{$shopId}/products")

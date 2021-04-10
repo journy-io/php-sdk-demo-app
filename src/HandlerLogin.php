@@ -70,7 +70,8 @@ final class HandlerLogin implements Handler
             "properties" => [
                 "first_name" => $user->getFirstName(),
                 "last_name" => $user->getLastName(),
-                "phone" => $user->getPhone(),
+                "phone" => (string) $user->getPhone(),
+                "registered_at" => $user->getRegisteredAt(),
             ],
         ]);
 
@@ -99,6 +100,7 @@ final class HandlerLogin implements Handler
                     "properties" => [
                         "name" => $shop->getName(),
                         "products" => count($this->products->getByShopId($admin->getShopId())),
+                        "created_at" => $shop->getCreatedAt(),
                     ],
                     "members" => array_map(
                         fn ($shopAdmin) => ["userId" => (string) $shopAdmin->getUserId()],
