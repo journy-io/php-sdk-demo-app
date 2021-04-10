@@ -10,15 +10,12 @@ use ShopManager\ShopAdmins\ShopAdmins;
 use ShopManager\Products\Products;
 use ShopManager\Shops\ShopId;
 use ShopManager\Shops\Shops;
-use ShopManager\Users\Users;
 use Money\Currencies\ISOCurrencies;
 use Money\Formatter\IntlMoneyFormatter;
 use NumberFormatter;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use PSR7Sessions\Storageless\Http\SessionMiddleware;
-use PSR7Sessions\Storageless\Session\SessionInterface;
 use Twig\Environment;
 
 final class HandlerProductsList implements Handler

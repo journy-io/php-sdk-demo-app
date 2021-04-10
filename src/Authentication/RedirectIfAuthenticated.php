@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ShopManager\Authentication;
 
-use ShopManager\Authentication\Authentication;
 use ShopManager\ShopAdmins\ShopAdmins;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;

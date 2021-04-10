@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace ShopManager;
 
 use ShopManager\Authentication\Authentication;
-use ShopManager\Users\Users;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Twig\Environment;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use PSR7Sessions\Storageless\Http\SessionMiddleware;
-use PSR7Sessions\Storageless\Session\SessionInterface;
 
 final class HandlerProductsAddForm implements Handler
 {
