@@ -50,7 +50,7 @@ final class HandlerProductsAdd implements Handler
         $user = $this->authentication->getUser($request);
         $this->client->addEvent(
             Event::forUserInAccount(
-                "added_product",
+                "product_added",
                 UserIdentified::byUserId((string) $user->getId()),
                 AccountIdentified::byAccountId((string) $shopId)
             )

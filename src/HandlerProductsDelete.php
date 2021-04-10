@@ -44,7 +44,7 @@ final class HandlerProductsDelete implements Handler
                 $user = $this->authentication->getUser($request);
                 $this->client->addEvent(
                     Event::forUserInAccount(
-                        "removed_product",
+                        "product_removed",
                         UserIdentified::byUserId((string) $user->getId()),
                         AccountIdentified::byAccountId((string) $shopId)
                     )
