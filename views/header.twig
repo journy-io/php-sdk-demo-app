@@ -24,6 +24,8 @@
                 <form action="/logout" method="POST">
                   <button class="button is-light" type="submit">Logout</button>
                 </form>
+              {% else %}
+                <a href="/login" class="button is-light">Login</a>
               {% endif %}
             </div>
           </div>

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace App;
+namespace ShopManager\Users;
 
 final class UsersInMemory implements Users
 {
@@ -9,10 +9,10 @@ final class UsersInMemory implements Users
      */
     private array $users = [];
 
-    public function getById(string $id): ?User
+    public function getById(UserId $id): ?User
     {
         foreach ($this->users as $user) {
-            if ($user->getId() === $id) {
+            if ($user->getId()->equals($id)) {
                 return $user;
             }
         }
@@ -20,10 +20,10 @@ final class UsersInMemory implements Users
         return null;
     }
 
-    public function getByEmail(string $email): ?User
+    public function getByEmail(Email $email): ?User
     {
         foreach ($this->users as $user) {
-            if ($user->getEmail() === $email) {
+            if ($user->getEmail()->equals($email)) {
                 return $user;
             }
         }
@@ -33,7 +33,9 @@ final class UsersInMemory implements Users
 
     public function persist(User $user): void
     {
-        $this->users = array_filter($this->users, fn ($existing) => $existing->getId() !== $user->getId());
+        $this->users = array_values(
+            array_filter($this->users, fn ($existing) => $existing->getId()->equals($user->getId()) === false)
+        );
         $this->users[] = $user;
     }
 }

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace App;
+namespace ShopManager\Shops;
 
 final class ShopsInMemory implements Shops
 {
@@ -9,10 +9,10 @@ final class ShopsInMemory implements Shops
      */
     private array $shops = [];
 
-    public function getById(string $id): ?Shop
+    public function getById(ShopId $id): ?Shop
     {
         foreach ($this->shops as $shop) {
-            if ($shop->getId() === $id) {
+            if ($shop->getId()->equals($id)) {
                 return $shop;
             }
         }
@@ -22,7 +22,9 @@ final class ShopsInMemory implements Shops
 
     public function persist(Shop $shop): void
     {
-        $this->shops = array_filter($this->shops, fn ($existing) => $existing->getId() !== $shop->getId());
+        $this->shops = array_values(
+            array_filter($this->shops, fn ($existing) => $existing->getId()->equals($shop->getId()) === false)
+        );
         $this->shops[] = $shop;
     }
 }

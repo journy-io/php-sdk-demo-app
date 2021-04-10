@@ -1,28 +1,21 @@
 <?php declare(strict_types=1);
 
-namespace App;
+namespace ShopManager\Products;
 
+use ShopManager\Shops\ShopId;
 use InvalidArgumentException;
 use Money\Money;
 
 final class Product
 {
     private bool $deleted = false;
-    private string $id;
-    private string $shopId;
+    private ProductId $id;
+    private ShopId $shopId;
     private string $name;
     private Money $price;
 
-    public function __construct(string $id, string $shopId, string $name, Money $price)
+    public function __construct(ProductId $id, ShopId $shopId, string $name, Money $price)
     {
-        if (empty($id)) {
-            throw new InvalidArgumentException("ID cannot be empty");
-        }
-
-        if (empty($shopId)) {
-            throw new InvalidArgumentException("Shop ID cannot be empty");
-        }
-
         if (empty($name)) {
             throw new InvalidArgumentException("Name cannot be empty");
         }
@@ -33,12 +26,12 @@ final class Product
         $this->price = $price;
     }
 
-    public function getId(): string
+    public function getId(): ProductId
     {
         return $this->id;
     }
 
-    public function getShopId(): string
+    public function getShopId(): ShopId
     {
         return $this->shopId;
     }

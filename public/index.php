@@ -2,54 +2,53 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\{Products,
-    ShopAdmin,
-    ShopAdmins,
-    ShopAdminsInMemory,
-    Product,
-    ProductsJSONFile,
-    Shop,
-    Shops,
-    ShopsInMemory,
-    User,
-    Users,
-    UsersInMemory};
+use ShopManager\Authentication;
+use ShopManager\HandlerHomePage;
+use ShopManager\HandlerLogin;
+use ShopManager\HandlerLoginForm;
+use ShopManager\HandlerLogout;
+use ShopManager\HandlerProductsAdd;
+use ShopManager\HandlerProductsAddForm;
+use ShopManager\HandlerProductsDelete;
+use ShopManager\HandlerProductsList;
+use ShopManager\Products\Products;
+use ShopManager\Products\ProductsJSONFile;
+use ShopManager\RedirectIfAuthenticated;
+use ShopManager\RedirectIfNotAuthenticated;
+use ShopManager\ShopAdmins\ShopAdmin;
+use ShopManager\ShopAdmins\ShopAdmins;
+use ShopManager\ShopAdmins\ShopAdminsInMemory;
+use ShopManager\Shops\Shop;
+use ShopManager\Shops\ShopId;
+use ShopManager\Shops\Shops;
+use ShopManager\Shops\ShopsInMemory;
+use ShopManager\Users\Email;
+use ShopManager\Users\PhoneNumber;
+use ShopManager\Users\User;
+use ShopManager\Users\UserId;
+use ShopManager\Users\Users;
+use ShopManager\Users\UsersInMemory;
 use Buzz\Client\Curl;
 use Dflydev\FigCookies\SetCookie;
-use JournyIO\SDK\AccountIdentified;
 use JournyIO\SDK\Client;
-use JournyIO\SDK\Event;
-use JournyIO\SDK\UserIdentified;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
-use Money\Currencies\ISOCurrencies;
-use Money\Formatter\IntlMoneyFormatter;
-use Money\Money;
+use League\Route\RouteGroup;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use PSR7Sessions\Storageless\Http\SessionMiddleware;
 use Twig\Environment;
 use League\Route\Router;
 use Twig\Loader\FilesystemLoader;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
 $factory = new Psr17Factory();
-$creator = new ServerRequestCreator(
-    $factory,
-    $factory,
-    $factory,
-    $factory
-);
-
-$request = $creator->fromGlobals();
+$creator = new ServerRequestCreator($factory, $factory, $factory, $factory);
 
 $router = new Router();
 $router->middleware(
@@ -60,328 +59,60 @@ $router->middleware(
             ->withHttpOnly(true)
             ->withPath("/"),
         1200,
-        new SystemClock(new DateTimeZone(date_default_timezone_get()))
+        new SystemClock(
+            new DateTimeZone(date_default_timezone_get())
+        )
     )
 );
-$loader = new FilesystemLoader(__DIR__ . '/../templates');
+
+$loader = new FilesystemLoader(__DIR__ . '/../views');
 $twig = new Environment($loader);
-/** @var Users $users */
-$users = new UsersInMemory();
-$hans = new User("1", "hans@journy.io", "Hans", "Ott");
-$users->persist($hans);
-/** @var Shops $shops */
-$shops = new ShopsInMemory();
-$clothing = new Shop("1", "journy.io's clothing");
-$shops->persist($clothing);
-$electronics = new Shop("2", "journy.io's electronics");
-$shops->persist($electronics);
-/** @var ShopAdmins $admins */
-$admins = new ShopAdminsInMemory();
-$admins->persist(new ShopAdmin($hans->getId(), $clothing->getId()));
-$admins->persist(new ShopAdmin($hans->getId(), $electronics->getId()));
-/** @var Products $products */
-$products = new ProductsJSONFile(__DIR__ . '/../data');
 $http = new Curl($factory, ["timeout" => 5]);
 $client = new Client($http, $factory, $factory, ["apiKey" => $_ENV["API_KEY"], "rootUrl" => $_ENV["API_URL"]]);
 
-$router->get('/', function (): ResponseInterface {
-    $response = new Response();
-    $response = $response
-        ->withStatus(302)
-        ->withAddedHeader("Location", "/login")
-    ;
+/** @var Users $users */
+$users = new UsersInMemory();
+$john = new User(new UserId("1"), new Email("john@acme.com"), "John", "Doe", new PhoneNumber("+32 495 555 730"), new DateTimeImmutable("2021-05-03"));
+$users->persist($john);
+$jane = new User(new UserId("2"), new Email("jane@acme.com"), "Jane", "Doe", new PhoneNumber("0456555338"), new DateTimeImmutable("2021-04-26"));
+$users->persist($jane);
 
-    return $response;
-});
+/** @var Shops $shops */
+$shops = new ShopsInMemory();
+$shop1 = new Shop(new ShopId("1"), "John's Shop", new DateTimeImmutable("2021-09-10"));
+$shops->persist($shop1);
+$shop2 = new Shop(new ShopId("2"), "Jane's Shop", new DateTimeImmutable("2021-12-13"));
+$shops->persist($shop2);
 
-$router->get('/login', function (ServerRequestInterface  $request) use ($twig, $users, $admins): ResponseInterface {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
+/** @var ShopAdmins $shopAdmins */
+$shopAdmins = new ShopAdminsInMemory();
+$shopAdmins->persist(new ShopAdmin($john->getId(), $shop1->getId()));
+$shopAdmins->persist(new ShopAdmin($john->getId(), $shop2->getId()));
+$shopAdmins->persist(new ShopAdmin($jane->getId(), $shop1->getId()));
+$shopAdmins->persist(new ShopAdmin($jane->getId(), $shop2->getId()));
 
-    if ($userId) {
-        $user = $users->getById($userId);
+/** @var Products $products */
+$products = new ProductsJSONFile(__DIR__ . '/../data');
 
-        if ($user) {
-            $shopAdmins = $admins->getByUserId($user->getId());
+$authentication = new Authentication($users);
+$redirectIfNotAuthenticated = new RedirectIfNotAuthenticated($factory, $authentication);
+$redirectIfAuthenticated = new RedirectIfAuthenticated($factory, $authentication, $shopAdmins);
 
-            return (new Response())
-                ->withStatus(302)
-                ->withAddedHeader("Location", "/shops/{$shopAdmins[0]->getShopId()}/products")
-            ;
-        }
-    }
+$router->get('/', new HandlerHomePage($factory, $twig));
+$router->get('/login', new HandlerLoginForm($users, $shopAdmins, $factory, $twig))->middleware($redirectIfAuthenticated);
+$router->post('/login', new HandlerLogin($client, $users, $shopAdmins, $shops, $products, $factory, $authentication))->middleware($redirectIfAuthenticated);
+$router->post("/logout", new HandlerLogout($client, $factory, $authentication))->middleware($redirectIfNotAuthenticated);
 
-    $response = new Response();
-    $response->getBody()->write($twig->render("login.twig"));
+$router
+    ->group("/shops", function (RouteGroup $route) use ($users, $shopAdmins, $twig, $factory, $products, $shops, $client, $authentication) {
+        $route->get('/{shopId}/products', new HandlerProductsList($shopAdmins, $twig, $factory, $products, $shops, $authentication));
+        $route->get('/{shopId}/products/add', new HandlerProductsAddForm($twig, $factory, $authentication));
+        $route->post('/{shopId}/products/add', new HandlerProductsAdd($authentication, $products, $client, $factory));
+        $route->post('/{shopId}/products/{productId}/delete', new HandlerProductsDelete($authentication, $products, $client, $factory));
+    })
+    ->middleware($redirectIfNotAuthenticated)
+;
 
-    return $response;
-});
-
-$router->post('/login', function (ServerRequestInterface $request) use ($users, $admins, $shops, $client, $products): ResponseInterface {
-    $form = $request->getParsedBody();
-
-    if (!$form) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $user = $users->getByEmail($form["email"]);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $session->set("userId", $user->getId());
-
-    $client->upsertUser([
-        "userId" => $user->getId(),
-        "email" => $user->getEmail(),
-        "properties" => [
-            "first_name" => $user->getFirstName(),
-            "last_name" => $user->getLastName(),
-        ],
-    ]);
-
-    $client->addEvent(
-        Event::forUser(
-            "logged_in",
-            UserIdentified::byUserId($user->getId())
-        )
-    );
-
-    $shopAdmins = $admins->getByUserId($user->getId());
-    foreach ($shopAdmins as $admin) {
-        $shop = $shops->getById($admin->getShopId());
-
-        if ($shop) {
-            $client->upsertAccount([
-                "accountId" => $shop->getId(),
-                "properties" => [
-                    "name" => $shop->getName(),
-                    "products" => count($products->getByShopId($admin->getShopId())),
-                ],
-                "members" => array_map(
-                    fn ($shopAdmin) => ["userId" => $shopAdmin->getUserId()],
-                    $admins->getByShopId($shop->getId())
-                )
-            ]);
-        }
-    }
-
-    return (new Response())
-        ->withStatus(302)
-        ->withAddedHeader("Location", "/shops/{$shopAdmins[0]->getShopId()}/products")
-    ;
-});
-
-$router->get('/shops/{shopId}/products', function (ServerRequestInterface $request, array $args) use (
-    $twig,
-    $users,
-    $products,
-    $admins,
-    $shops
-): ResponseInterface {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
-    $user = $users->getById($userId);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $admins = $admins->getByUserId($user->getId());
-    $numberFormatter = new NumberFormatter("en_UK", NumberFormatter::DECIMAL);
-    $moneyFormatter = new IntlMoneyFormatter($numberFormatter, new ISOCurrencies());
-    $response = new Response();
-    $response->getBody()->write(
-      $twig->render(
-          "products.twig",
-          [
-              'shopId' => $args["shopId"],
-              'shops' => array_map(
-                  function (ShopAdmin $admin) use ($shops) {
-                      $shop = $shops->getById($admin->getShopId());
-
-                      return [
-                          "id" => $shop->getId(),
-                          "name" => $shop->getName(),
-                      ];
-                  },
-                  $admins
-              ),
-              'user' => [
-                  "id" => $user->getId(),
-                  "first_name" => $user->getFirstName(),
-                  "last_name" => $user->getLastName(),
-              ],
-              'products' => array_map(
-                  fn ($product) => ([
-                      "id" => $product->getId(),
-                      "name" => $product->getName(),
-                      "price" => $moneyFormatter->format($product->getPrice())
-                  ]),
-                  $products->getByShopId($args["shopId"])
-              )
-          ]
-      )
-    );
-
-    return $response;
-});
-
-$router->get('/shops/{shopId}/products/add', function (ServerRequestInterface $request, array $args) use (
-    $twig,
-    $users
-): ResponseInterface {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
-    $user = $users->getById($userId);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", '/login')
-        ;
-    }
-
-    $response = new Response();
-    $response->getBody()->write(
-        $twig->render("add-product.twig", [
-            'shopId' => $args['shopId'],
-            'user' => [
-                "id" => $user->getId(),
-                "first_name" => $user->getFirstName(),
-                "last_name" => $user->getLastName(),
-            ],
-        ])
-    );
-
-    return $response;
-});
-
-$router->post('/shops/{shopId}/products/add', function (ServerRequestInterface $request, array $args) use (
-    $users,
-    $products,
-    $client
-): ResponseInterface {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
-    $user = $users->getById($userId);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $shopId = $args["shopId"];
-    $body = $request->getParsedBody();
-
-    $products->persist(
-        new Product(
-            uniqid("product_", false),
-            $shopId,
-            $body["name"],
-            Money::EUR($body["price"] * 100)
-        )
-    );
-
-    $client->addEvent(
-      Event::forUserInAccount(
-          "added_product",
-          UserIdentified::byUserId($user->getId()),
-          AccountIdentified::byAccountId($shopId)
-      )->withMetadata(["name" => $body["name"], "price" => (int) $body["price"]])
-    );
-
-    return (new Response())
-        ->withStatus(302)
-        ->withAddedHeader("Location", "/shops/{$shopId}/products")
-    ;
-});
-
-$router->post('/shops/{shopId}/products/{productId}/delete', function (ServerRequestInterface $request, array $args) use (
-    $users,
-    $products,
-    $client
-): ResponseInterface {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
-    $user = $users->getById($userId);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $shopId = $args["shopId"];
-    $productId = $args["productId"];
-    $shopProducts = $products->getByShopId($shopId);
-    foreach ($shopProducts as $product) {
-        if ($product->getId() === $productId) {
-            $product->delete();
-            $products->persist($product);
-
-            $client->addEvent(
-                Event::forUserInAccount(
-                    "removed_product",
-                    UserIdentified::byUserId($user->getId()),
-                    AccountIdentified::byAccountId($shopId)
-                )
-            );
-        }
-    }
-
-    return (new Response())
-        ->withStatus(302)
-        ->withAddedHeader("Location", "/shops/{$shopId}/products")
-    ;
-});
-
-$router->post("/logout", function (ServerRequestInterface $request) use ($users, $client) {
-    /** @var PSR7Sessions\Storageless\Session\SessionInterface $session */
-    $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
-    $userId = $session->get("userId");
-    $user = $users->getById($userId);
-
-    if (!$user) {
-        return (new Response())
-            ->withStatus(302)
-            ->withAddedHeader("Location", "/login")
-        ;
-    }
-
-    $client->addEvent(
-        Event::forUser(
-            "logged_out",
-            UserIdentified::byUserId($user->getId())
-        )
-    );
-
-    $session->clear();
-
-    return (new Response())
-        ->withStatus(302)
-        ->withAddedHeader("Location", '/login')
-    ;
-});
-
+$request = $creator->fromGlobals();
 $response = $router->dispatch($request);
-(new SapiEmitter())->emit($response);
+(new SapiEmitter)->emit($response);

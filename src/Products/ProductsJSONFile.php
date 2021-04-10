@@ -1,7 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace App;
+namespace ShopManager\Products;
 
+use ShopManager\Shops\ShopId;
 use InvalidArgumentException;
 use Money\Currency;
 use Money\Money;
@@ -20,11 +21,11 @@ final class ProductsJSONFile implements Products
     }
 
     /**
-     * @param string $shopId
+     * @param ShopId $shopId
      *
      * @return Product[]
      */
-    private function load(string $shopId): array
+    private function load(ShopId $shopId): array
     {
         $contents = @file_get_contents($this->getFileName($shopId));
 
@@ -36,7 +37,7 @@ final class ProductsJSONFile implements Products
 
         return array_map(
             fn (array $product) => new Product(
-                $product["id"],
+                new ProductId($product["id"]),
                 $shopId,
                 $product["name"],
                 new Money($product["price"]["amount"], new Currency($product["price"]["currency"]))
@@ -45,23 +46,23 @@ final class ProductsJSONFile implements Products
         );
     }
 
-    private function getFileName(string $shopId): string
+    private function getFileName(ShopId $shopId): string
     {
         return $this->directory . DIRECTORY_SEPARATOR . $shopId . ".json";
     }
 
     /**
      * @param Product[] $products
-     * @param string $shopId
+     * @param ShopId $shopId
      */
-    private function write(array $products, string $shopId)
+    private function write(array $products, ShopId $shopId)
     {
         file_put_contents(
             $this->getFileName($shopId),
             json_encode(
                 array_map(
                     fn ($product) => ([
-                        "id" => $product->getId(),
+                        "id" => (string) $product->getId(),
                         "name" => $product->getName(),
                         "price" => [
                             "amount" => $product->getPrice()->getAmount(),
@@ -75,7 +76,7 @@ final class ProductsJSONFile implements Products
         );
     }
 
-    public function getByShopId(string $shopId): array
+    public function getByShopId(ShopId $shopId): array
     {
         return $this->load($shopId);
     }
@@ -83,7 +84,7 @@ final class ProductsJSONFile implements Products
     public function persist(Product $product): void
     {
         $products = $this->load($product->getShopId());
-        $products = array_filter($products, fn ($existing) => $existing->getId() !== $product->getId());
+        $products = array_filter($products, fn ($existing) => $existing->getId()->equals($product->getId()) === false);
         if ($product->isDeleted() === false) {
             $products[] = $product;
         }
