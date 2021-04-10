@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use ShopManager\Authentication;
+use ShopManager\Authentication\Authentication;
 use ShopManager\HandlerHomePage;
 use ShopManager\HandlerLogin;
 use ShopManager\HandlerLoginForm;
@@ -13,8 +13,8 @@ use ShopManager\HandlerProductsDelete;
 use ShopManager\HandlerProductsList;
 use ShopManager\Products\Products;
 use ShopManager\Products\ProductsJSONFile;
-use ShopManager\RedirectIfAuthenticated;
-use ShopManager\RedirectIfNotAuthenticated;
+use ShopManager\Authentication\RedirectIfAuthenticated;
+use ShopManager\Authentication\RedirectIfNotAuthenticated;
 use ShopManager\ShopAdmins\ShopAdmin;
 use ShopManager\ShopAdmins\ShopAdmins;
 use ShopManager\ShopAdmins\ShopAdminsInMemory;
@@ -72,9 +72,23 @@ $client = new Client($http, $factory, $factory, ["apiKey" => $_ENV["API_KEY"], "
 
 /** @var Users $users */
 $users = new UsersInMemory();
-$john = new User(new UserId("1"), new Email("john@acme.com"), "John", "Doe", new PhoneNumber("+32 495 555 730"), new DateTimeImmutable("2021-05-03"));
+$john = new User(
+    new UserId("1"),
+    new Email("john@acme.com"),
+    "John",
+    "Doe",
+    new PhoneNumber("+32 495 555 730"),
+    new DateTimeImmutable("2021-05-03")
+);
 $users->persist($john);
-$jane = new User(new UserId("2"), new Email("jane@acme.com"), "Jane", "Doe", new PhoneNumber("0456555338"), new DateTimeImmutable("2021-04-26"));
+$jane = new User(
+    new UserId("2"),
+    new Email("jane@acme.com"),
+    "Jane",
+    "Doe",
+    new PhoneNumber("0456555338"),
+    new DateTimeImmutable("2021-04-26")
+);
 $users->persist($jane);
 
 /** @var Shops $shops */
@@ -104,15 +118,14 @@ $router->post('/login', new HandlerLogin($client, $users, $shopAdmins, $shops, $
 $router->post("/logout", new HandlerLogout($client, $factory, $authentication))->middleware($redirectIfNotAuthenticated);
 
 $router
-    ->group("/shops", function (RouteGroup $route) use ($users, $shopAdmins, $twig, $factory, $products, $shops, $client, $authentication) {
+    ->group("/shops", function (RouteGroup $route) use ($shopAdmins, $twig, $factory, $products, $shops, $client, $authentication) {
         $route->get('/{shopId}/products', new HandlerProductsList($shopAdmins, $twig, $factory, $products, $shops, $authentication));
         $route->get('/{shopId}/products/add', new HandlerProductsAddForm($twig, $factory, $authentication));
         $route->post('/{shopId}/products/add', new HandlerProductsAdd($authentication, $products, $client, $factory));
         $route->post('/{shopId}/products/{productId}/delete', new HandlerProductsDelete($authentication, $products, $client, $factory));
     })
-    ->middleware($redirectIfNotAuthenticated)
-;
+    ->middleware($redirectIfNotAuthenticated);
 
 $request = $creator->fromGlobals();
 $response = $router->dispatch($request);
-(new SapiEmitter)->emit($response);
+(new SapiEmitter())->emit($response);

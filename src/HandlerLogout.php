@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ShopManager;
 
@@ -8,6 +10,7 @@ use JournyIO\SDK\UserIdentified;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use ShopManager\Authentication\Authentication;
 
 final class HandlerLogout implements Handler
 {

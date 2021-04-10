@@ -1,7 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ShopManager;
 
+use ShopManager\Authentication\Authentication;
 use ShopManager\ShopAdmins\ShopAdmin;
 use ShopManager\ShopAdmins\ShopAdmins;
 use ShopManager\Products\Products;

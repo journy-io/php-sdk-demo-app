@@ -1,36 +1,33 @@
-<?php declare(strict_types=1);
+<?php
 
-namespace ShopManager;
+declare(strict_types=1);
 
-use ShopManager\ShopAdmins\ShopAdmins;
+namespace ShopManager\Authentication;
+
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ShopManager\Authentication\Authentication;
 
-final class RedirectIfAuthenticated implements MiddlewareInterface
+final class RedirectIfNotAuthenticated implements MiddlewareInterface
 {
     private ResponseFactoryInterface $factory;
     private Authentication $authentication;
-    private ShopAdmins $shopAdmins;
 
-    public function __construct(ResponseFactoryInterface $factory, Authentication $authentication, ShopAdmins $shopAdmins)
+    public function __construct(ResponseFactoryInterface $factory, Authentication $authentication)
     {
         $this->factory = $factory;
         $this->authentication = $authentication;
-        $this->shopAdmins = $shopAdmins;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if ($this->authentication->isLoggedIn($request)) {
-            $user = $this->authentication->getUser($request);
-            $admins = $this->shopAdmins->getByUserId($user->getId());
-
+        if (!$this->authentication->isLoggedIn($request)) {
             return $this->factory->createResponse()
                 ->withStatus(302)
-                ->withHeader("Location", "/shops/{$admins[0]->getShopId()}/products")
+                ->withHeader("Location", "/login")
             ;
         }
 

@@ -1,6 +1,8 @@
-<?php declare(strict_types=1);
+<?php
 
-namespace ShopManager;
+declare(strict_types=1);
+
+namespace ShopManager\Authentication;
 
 use ShopManager\Users\User;
 use ShopManager\Users\UserId;
