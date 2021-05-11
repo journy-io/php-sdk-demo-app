@@ -103,7 +103,7 @@ final class HandlerLogin implements Handler
                     "properties" => [
                         "name" => $shop->getName(),
                         "products" => count($this->products->getByShopId($admin->getShopId())),
-                        "created_at" => $shop->getCreatedAt(),
+                        "registered_at" => $shop->getCreatedAt(),
                     ],
                     "members" => array_map(
                         fn ($shopAdmin) => ["userId" => (string) $shopAdmin->getUserId()],
