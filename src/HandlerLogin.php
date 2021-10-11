@@ -105,7 +105,13 @@ final class HandlerLogin implements Handler
                         "products" => count($this->products->getByShopId($admin->getShopId())),
                         "registered_at" => $shop->getCreatedAt(),
                     ],
-                    "members" => array_map(
+                ]);
+
+                $this->client->addUsersToAccount([
+                    "account" => [
+                        "accountId" => (string) $shop->getId(),
+                    ],
+                    "users" => array_map(
                         fn ($shopAdmin) => ["userId" => (string) $shopAdmin->getUserId()],
                         $this->shopAdmins->getByShopId($shop->getId())
                     )

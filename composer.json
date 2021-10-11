@@ -21,8 +21,8 @@
         "nyholm/psr7-server": "^1.0",
         "ext-intl": "*",
         "kriswallsmith/buzz": "^1.2",
-        "journy-io/sdk": "^3.0",
-        "giggsey/libphonenumber-for-php": "^8.12"
+        "giggsey/libphonenumber-for-php": "^8.12",
+        "journy-io/sdk": "^3.0"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest",
