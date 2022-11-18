@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "twig/twig": "^3.3",
+        "twig/twig": "^3.4",
         "league/route": "^5.0",
         "nyholm/psr7": "^1.4",
         "laminas/laminas-httphandlerrunner": "^1.4",
